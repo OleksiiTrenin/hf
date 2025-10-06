@@ -1,29 +1,35 @@
 [
   {
     "id": 1,
-    "title": "Квартира в центрі Львова",
     "city": "Львів",
     "type": "Квартира",
+    "title": "Квартира в центрі Львова",
     "price": 1200000,
-    "rooms": "2",
-    "image": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c"
+    "area": 60,
+    "rooms": 2,
+    "year": 2024,
+    "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
   },
   {
     "id": 2,
-    "title": "Просторий будинок у Києві",
     "city": "Київ",
     "type": "Будинок",
+    "title": "Просторий будинок у Києві",
     "price": 2500000,
-    "rooms": "4",
-    "image": "https://images.unsplash.com/photo-1572120360610-d971b9d7767c"
+    "area": 150,
+    "rooms": 5,
+    "year": 2023,
+    "image": "https://images.unsplash.com/photo-1572120360610-d971b9b78825"
   },
   {
     "id": 3,
-    "title": "Сучасна квартира у Варшаві",
     "city": "Варшава",
     "type": "Квартира",
+    "title": "Сучасна квартира у Варшаві",
     "price": 1900000,
-    "rooms": "3",
-    "image": "https://images.unsplash.com/photo-1600607687687-c6d5b5a54a6b"
+    "area": 80,
+    "rooms": 3,
+    "year": 2025,
+    "image": "https://images.unsplash.com/photo-1560185127-6ed189bf02f4"
   }
 ]

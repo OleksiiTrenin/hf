@@ -1,60 +1,59 @@
-import React, { useRef, useEffect } from "react";
-import { Animated, Image, Text, View, StyleSheet } from "react-native";
+import React from "react";
+import { View, Text, Image, StyleSheet } from "react-native";
 
 export default function PropertyCard({ property }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
   return (
-    <Animated.View style={[styles.card, { opacity: fadeAnim }]}>
+    <View style={styles.card}>
       <Image source={{ uri: property.image }} style={styles.image} />
       <View style={styles.info}>
-        <Text style={styles.name}>{property.title}</Text>
-        <Text style={styles.city}>
+        <Text style={styles.title}>{property.title}</Text>
+        <Text style={styles.text}>
           {property.city} • {property.type}
         </Text>
-        <Text style={styles.price}>{property.price.toLocaleString()} ₴</Text>
+        <Text style={styles.text}>
+          {property.area} м² • {property.rooms} кімн.
+        </Text>
+        <Text style={styles.price}>
+          {property.price.toLocaleString()} ₴
+        </Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 260,
     backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: "hidden",
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
     elevation: 3,
   },
   image: {
     width: "100%",
-    height: 160,
+    height: 180,
   },
   info: {
-    padding: 10,
+    padding: 12,
   },
-  name: {
-    fontSize: 15,
-    fontWeight: "600",
+  title: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1a1a1a",
   },
-  city: {
-    color: "#666",
-    marginVertical: 4,
+  text: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 2,
   },
   price: {
+    fontSize: 16,
+    color: "#E67E22",
     fontWeight: "700",
-    color: "#F97316",
+    marginTop: 6,
   },
 });
