@@ -1,154 +1,186 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Platform,
-  Animated,
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import React, { useMemo, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 
-const Slider =
-  Platform.OS === "web"
-    ? ({ min, max, step, value, onValueChange }) => (
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onValueChange(Number(e.target.value))}
-          style={{ width: "100%" }}
-        />
-      )
-    : require("@react-native-community/slider").default;
+// беремо реальні міста з даних
+const properties = require("../data/properties.json");
+const unique = (arr) => Array.from(new Set(arr));
+
+const CITIES = unique(properties.map((p) => p.city)).sort();
+const TYPES  = unique(properties.map((p) => p.type)); // ["Квартира","Будинок"] для твого JSON
+
+const Section = ({ title, expanded, onToggle, children }) => (
+  <View style={styles.section}>
+    <TouchableOpacity style={styles.sectionHeader} onPress={onToggle}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={styles.chevron}>{expanded ? "▾" : "▸"}</Text>
+    </TouchableOpacity>
+    {expanded && <View style={styles.sectionBody}>{children}</View>}
+  </View>
+);
 
 export default function FilterSidebar({ filters, setFilters }) {
-  const [expanded, setExpanded] = useState(false);
-  const [animation] = useState(new Animated.Value(0));
-
-  const toggleExpanded = () => {
-    setExpanded(!expanded);
-    Animated.timing(animation, {
-      toValue: expanded ? 0 : 1,
-      duration: 400,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const animatedHeight = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 420],
+  const [open, setOpen] = useState({
+    city: true, type: true, rooms: true, year: true, price: true, area: true,
   });
 
+  const setF = (k, v) => setFilters({ ...filters, [k]: v });
+
+  const Pill = ({ field, value, label }) => {
+    const active = filters[field] === value;
+    return (
+      <TouchableOpacity
+        onPress={() => setF(field, active ? "" : value)}
+        style={[styles.pill, active && styles.pillActive]}
+      >
+        <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const clearAll = () =>
+    setFilters({ city: "", type: "", rooms: "", yearPlanned: "", priceBand: "", areaBand: "" });
+
+  // мапи категорій
+  const priceOptions = useMemo(
+    () => [
+      { v: "to2m",     label: "До 2 000 000 ₴" },
+      { v: "2to2_5m",  label: "2–2.5 млн ₴"   },
+      { v: "from2_5m", label: "Від 2.5 млн ₴" },
+    ],
+    []
+  );
+
+  const areaOptions = useMemo(
+    () => [
+      { v: "to70",     label: "До 70 м²"   },
+      { v: "70to120",  label: "70–120 м²"  },
+      { v: "from120",  label: "120+ м²"    },
+    ],
+    []
+  );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Фільтри</Text>
+    <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 12 }}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Фільтри</Text>
+        <TouchableOpacity onPress={clearAll}>
+          <Text style={styles.reset}>Скинути</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Місто */}
-      <Text style={styles.label}>Місто</Text>
-      <Picker
-        selectedValue={filters.city}
-        onValueChange={(v) => setFilters({ ...filters, city: v })}
-        style={styles.picker}
+      <Section
+        title="Місто"
+        expanded={open.city}
+        onToggle={() => setOpen({ ...open, city: !open.city })}
       >
-        <Picker.Item label="Усі" value="" />
-        <Picker.Item label="Львів" value="Львів" />
-        <Picker.Item label="Київ" value="Київ" />
-        <Picker.Item label="Варшава" value="Варшава" />
-      </Picker>
+        <View style={styles.pillRow}>
+          {CITIES.map((c) => (
+            <Pill key={c} field="city" value={c} label={c} />
+          ))}
+        </View>
+      </Section>
 
       {/* Тип нерухомості */}
-      <Text style={styles.label}>Тип нерухомості</Text>
-      <Picker
-        selectedValue={filters.type}
-        onValueChange={(v) => setFilters({ ...filters, type: v })}
-        style={styles.picker}
+      <Section
+        title="Тип нерухомості"
+        expanded={open.type}
+        onToggle={() => setOpen({ ...open, type: !open.type })}
       >
-        <Picker.Item label="Усі" value="" />
-        <Picker.Item label="Квартира" value="Квартира" />
-        <Picker.Item label="Будинок" value="Будинок" />
-      </Picker>
+        <View style={styles.pillRow}>
+          {TYPES.map((t) => (
+            <Pill key={t} field="type" value={t} label={t} />
+          ))}
+        </View>
+      </Section>
 
-      {/* Прихований блок */}
-      <Animated.View style={{ overflow: "hidden", height: animatedHeight }}>
-        <Text style={styles.label}>Ціна (₴)</Text>
-        <Slider
-          min={0}
-          max={10000000}
-          step={50000}
-          value={filters.price || 0}
-          onValueChange={(v) => setFilters({ ...filters, price: v })}
-        />
-        <Text>{filters.price?.toLocaleString() || 0} ₴</Text>
+      {/* Кількість кімнат */}
+      <Section
+        title="Кількість кімнат"
+        expanded={open.rooms}
+        onToggle={() => setOpen({ ...open, rooms: !open.rooms })}
+      >
+        <View style={styles.pillRow}>
+          {["1", "2", "3", "4+"].map((r) => (
+            <Pill key={r} field="rooms" value={r} label={r} />
+          ))}
+        </View>
+      </Section>
 
-        <Text style={styles.label}>Площа (м²)</Text>
-        <Slider
-          min={0}
-          max={300}
-          step={1}
-          value={filters.area || 0}
-          onValueChange={(v) => setFilters({ ...filters, area: v })}
-        />
-        <Text>{filters.area || 0} м²</Text>
+      {/* Заплановане введення */}
+      <Section
+        title="Заплановане введення"
+        expanded={open.year}
+        onToggle={() => setOpen({ ...open, year: !open.year })}
+      >
+        <View style={styles.pillRow}>
+          {["2025", "2026", "2027", "2028+"].map((y) => (
+            <Pill key={y} field="yearPlanned" value={y} label={y} />
+          ))}
+        </View>
+      </Section>
 
-        <Text style={styles.label}>Кількість кімнат</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Наприклад: 2"
-          value={String(filters.rooms || "")}
-          onChangeText={(v) => setFilters({ ...filters, rooms: Number(v) })}
-        />
+      {/* Ціна */}
+      <Section
+        title="Ціна"
+        expanded={open.price}
+        onToggle={() => setOpen({ ...open, price: !open.price })}
+      >
+        <View style={styles.pillRow}>
+          {priceOptions.map((o) => (
+            <Pill key={o.v} field="priceBand" value={o.v} label={o.label} />
+          ))}
+        </View>
+      </Section>
 
-        <Text style={styles.label}>Рік введення</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="2024"
-          value={String(filters.year || "")}
-          onChangeText={(v) => setFilters({ ...filters, year: Number(v) })}
-        />
-      </Animated.View>
-
-      {/* Кнопка */}
-      <TouchableOpacity style={styles.button} onPress={toggleExpanded}>
-        <Text style={styles.buttonText}>
-          {expanded ? "Сховати фільтр ▲" : "Розгорнути фільтр ▼"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      {/* Площа */}
+      <Section
+        title="Площа"
+        expanded={open.area}
+        onToggle={() => setOpen({ ...open, area: !open.area })}
+      >
+        <View style={styles.pillRow}>
+          {areaOptions.map((o) => (
+            <Pill key={o.v} field="areaBand" value={o.v} label={o.label} />
+          ))}
+        </View>
+      </Section>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrap: {
     backgroundColor: "#fff",
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
     elevation: 3,
   },
-  title: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
-  label: { fontWeight: "600", marginTop: 10 },
-  picker: { backgroundColor: "#f3f3f3", marginTop: 5 },
-  input: {
-    backgroundColor: "#f3f3f3",
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 5,
-  },
-  button: {
-    backgroundColor: "#E67E22",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 6,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
+  title: { fontSize: 20, fontWeight: "700", color: "#111" },
+  reset: { color: "#ff9900", fontWeight: "600" },
+
+  section: { marginTop: 12, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 12 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#000" },
+  chevron: { fontSize: 16, color: "#777" },
+  sectionBody: { marginTop: 8 },
+
+  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pill: {
+    borderWidth: 1,
+    borderColor: "#d8d8d8",
+    backgroundColor: "#fff",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  pillActive: { backgroundColor: "#ff9900", borderColor: "#ff9900" },
+  pillText: { color: "#333" },
+  pillTextActive: { color: "#fff", fontWeight: "700" },
 });

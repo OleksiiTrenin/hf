@@ -6,18 +6,41 @@ import propertiesData from "../data/properties.json";
 
 export default function HomeScreen() {
   const [filters, setFilters] = useState({});
-  const [properties, setProperties] = useState(propertiesData);
+  const [properties] = useState(propertiesData);
 
   const filtered = properties.filter((item) => {
-    const { city, type, price, area, rooms, year } = filters;
-    return (
-      (!city || item.city === city) &&
-      (!type || item.type === type) &&
-      (!price || item.price <= price) &&
-      (!area || item.area >= area) &&
-      (!rooms || item.rooms === rooms) &&
-      (!year || item.year === year)
-    );
+    const {
+      city, type, rooms, yearPlanned, priceBand, areaBand,
+    } = filters;
+
+    const cityOk = !city || item.city === city;
+    const typeOk = !type || item.type === type;
+
+    const roomsOk =
+      !rooms ||
+      (rooms === "4+" ? item.rooms >= 4 : item.rooms === parseInt(rooms));
+
+    const yearOk =
+      !yearPlanned ||
+      (yearPlanned === "2028+" ? item.year >= 2028 : item.year === parseInt(yearPlanned));
+
+    const priceOk =
+      !priceBand ||
+      (priceBand === "to2m"
+        ? item.price <= 2000000
+        : priceBand === "2to2_5m"
+        ? item.price > 2000000 && item.price <= 2500000
+        : item.price > 2500000);
+
+    const areaOk =
+      !areaBand ||
+      (areaBand === "to70"
+        ? item.area <= 70
+        : areaBand === "70to120"
+        ? item.area > 70 && item.area <= 120
+        : item.area > 120);
+
+    return cityOk && typeOk && roomsOk && yearOk && priceOk && areaOk;
   });
 
   return (
@@ -35,19 +58,14 @@ export default function HomeScreen() {
 }
 
 const { width } = Dimensions.get("window");
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: width > 900 ? "row" : "column",
     backgroundColor: "#f8f8f8",
     flex: 1,
     padding: 16,
+    gap: 16,
   },
-  sidebar: {
-    flex: width > 900 ? 0.3 : 1,
-    marginRight: width > 900 ? 20 : 0,
-  },
-  list: {
-    flex: width > 900 ? 0.7 : 1,
-  },
+  sidebar: { flex: width > 900 ? 0.28 : 1 },
+  list: { flex: width > 900 ? 0.72 : 1 },
 });

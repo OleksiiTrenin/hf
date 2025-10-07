@@ -1,13 +1,13 @@
 import React from "react";
-import { SafeAreaView } from "react-native";
+import { SafeAreaView, StatusBar } from "react-native";
+import Header from "./src/components/Header";
 import HomeScreen from "./src/screens/HomeScreen";
-import { StatusBar } from "expo-status-bar";
-import "./global.css";
 
 export default function App() {
   return (
-    <SafeAreaView className="flex-1 bg-lightGray">
-      <StatusBar style="dark" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <StatusBar barStyle="dark-content" />
+      <Header />
       <HomeScreen />
     </SafeAreaView>
   );

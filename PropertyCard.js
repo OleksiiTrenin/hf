@@ -4,18 +4,18 @@ import { View, Text, Image, StyleSheet } from "react-native";
 export default function PropertyCard({ property }) {
   return (
     <View style={styles.card}>
-      <Image source={{ uri: property.image }} style={styles.image} />
+      <Image
+        source={{ uri: property.image }}
+        style={styles.image}
+        resizeMode="cover"
+      />
       <View style={styles.info}>
         <Text style={styles.title}>{property.title}</Text>
-        <Text style={styles.text}>
-          {property.city} • {property.type}
+        <Text style={styles.subtitle}>
+          {property.city} • {property.type} • {property.area} м² •{" "}
+          {property.rooms} кімн. • {property.year}
         </Text>
-        <Text style={styles.text}>
-          {property.area} м² • {property.rooms} кімн.
-        </Text>
-        <Text style={styles.price}>
-          {property.price.toLocaleString()} ₴
-        </Text>
+        <Text style={styles.price}>₴ {property.price.toLocaleString()}</Text>
       </View>
     </View>
   );
@@ -24,13 +24,9 @@ export default function PropertyCard({ property }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
+    borderRadius: 10,
     marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    overflow: "hidden",
     elevation: 3,
   },
   image: {
@@ -42,18 +38,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#1a1a1a",
+    fontWeight: "bold",
+    marginBottom: 4,
   },
-  text: {
-    fontSize: 14,
+  subtitle: {
     color: "#555",
-    marginTop: 2,
+    marginBottom: 6,
   },
   price: {
+    fontWeight: "bold",
     fontSize: 16,
-    color: "#E67E22",
-    fontWeight: "700",
-    marginTop: 6,
   },
 });
