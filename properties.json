@@ -31,5 +31,38 @@
     "rooms": 3,
     "year": 2025,
     "image": "https://images.unsplash.com/photo-1560185127-6ed189bf02f4"
+  },
+  {
+    "id": 4,
+    "city": "Львів",
+    "type": "Квартира",
+    "title": "Новобудова біля парку",
+    "price": 1800000,
+    "area": 75,
+    "rooms": 3,
+    "year": 2026,
+    "image": "https://images.unsplash.com/photo-1600585154154-85b5a1c00eaa"
+  },
+  {
+    "id": 5,
+    "city": "Одеса",
+    "type": "Будинок",
+    "title": "Будинок біля моря",
+    "price": 3500000,
+    "area": 200,
+    "rooms": 6,
+    "year": 2027,
+    "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994"
+  },
+  {
+    "id": 6,
+    "city": "Краків",
+    "type": "Квартира",
+    "title": "Квартира у центрі Кракова",
+    "price": 2200000,
+    "area": 90,
+    "rooms": 3,
+    "year": 2028,
+    "image": "https://images.unsplash.com/photo-1600047509807-ba3f1c2a2d5d"
   }
 ]

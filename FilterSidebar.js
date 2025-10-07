@@ -1,29 +1,22 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 
-// беремо реальні міста з даних
-const properties = require("../data/properties.json");
-const unique = (arr) => Array.from(new Set(arr));
+export default function FilterSidebar({ filters, setFilters, currency, formatPrice, data }) {
+  const cities = useMemo(() => [...new Set(data.map((p) => p.city))].sort(), [data]);
+  const types = useMemo(() => [...new Set(data.map((p) => p.type))], [data]);
+  const minPriceAll = Math.min(...data.map((p) => p.price));
+  const maxPriceAll = Math.max(...data.map((p) => p.price));
+  const minAreaAll = Math.min(...data.map((p) => p.area));
+  const maxAreaAll = Math.max(...data.map((p) => p.area));
 
-const CITIES = unique(properties.map((p) => p.city)).sort();
-const TYPES  = unique(properties.map((p) => p.type)); // ["Квартира","Будинок"] для твого JSON
-
-const Section = ({ title, expanded, onToggle, children }) => (
-  <View style={styles.section}>
-    <TouchableOpacity style={styles.sectionHeader} onPress={onToggle}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.chevron}>{expanded ? "▾" : "▸"}</Text>
-    </TouchableOpacity>
-    {expanded && <View style={styles.sectionBody}>{children}</View>}
-  </View>
-);
-
-export default function FilterSidebar({ filters, setFilters }) {
-  const [open, setOpen] = useState({
-    city: true, type: true, rooms: true, year: true, price: true, area: true,
-  });
-
+  const [minPrice, setMinPrice] = useState(filters.minPrice ?? minPriceAll);
+  const [maxPrice, setMaxPrice] = useState(filters.maxPrice ?? maxPriceAll);
+  const [minArea, setMinArea] = useState(filters.minArea ?? minAreaAll);
+  const [maxArea, setMaxArea] = useState(filters.maxArea ?? maxAreaAll);
+  const [open, setOpen] = useState({ city: true, type: true, rooms: true, year: true, price: true, area: true });
+  const toggle = (k) => setOpen((p) => ({ ...p, [k]: !p[k] }));
   const setF = (k, v) => setFilters({ ...filters, [k]: v });
+  const resetAll = () => { setFilters({}); setMinPrice(minPriceAll); setMaxPrice(maxPriceAll); setMinArea(minAreaAll); setMaxArea(maxAreaAll); };
 
   const Pill = ({ field, value, label }) => {
     const active = filters[field] === value;
@@ -37,150 +30,114 @@ export default function FilterSidebar({ filters, setFilters }) {
     );
   };
 
-  const clearAll = () =>
-    setFilters({ city: "", type: "", rooms: "", yearPlanned: "", priceBand: "", areaBand: "" });
+  const Slider = ({ min, max, valMin, valMax, setValMin, setValMax, step = 1 }) => {
+    const range = max - min;
+    const width = 200;
+    const minPos = ((valMin - min) / range) * width;
+    const maxPos = ((valMax - min) / range) * width;
 
-  // мапи категорій
-  const priceOptions = useMemo(
-    () => [
-      { v: "to2m",     label: "До 2 000 000 ₴" },
-      { v: "2to2_5m",  label: "2–2.5 млн ₴"   },
-      { v: "from2_5m", label: "Від 2.5 млн ₴" },
-    ],
-    []
-  );
+    const onTrackPress = (e) => {
+      const clickX = e.nativeEvent.locationX;
+      const distToMin = Math.abs(clickX - minPos);
+      const distToMax = Math.abs(clickX - maxPos);
+      if (distToMin < distToMax) {
+        const newVal = Math.min(valMax - step, min + (clickX / width) * range);
+        setValMin(Math.round(newVal));
+        setF("minPrice", newVal);
+      } else {
+        const newVal = Math.max(valMin + step, min + (clickX / width) * range);
+        setValMax(Math.round(newVal));
+        setF("maxPrice", newVal);
+      }
+    };
 
-  const areaOptions = useMemo(
-    () => [
-      { v: "to70",     label: "До 70 м²"   },
-      { v: "70to120",  label: "70–120 м²"  },
-      { v: "from120",  label: "120+ м²"    },
-    ],
-    []
+    return (
+      <TouchableOpacity style={styles.sliderWrap} onPress={onTrackPress} activeOpacity={1}>
+        <View style={styles.sliderTrack} />
+        <View style={[styles.sliderRange, { left: minPos, width: maxPos - minPos }]} />
+        <View style={[styles.sliderThumb, { left: minPos - 9 }]} />
+        <View style={[styles.sliderThumb, { left: maxPos - 9 }]} />
+      </TouchableOpacity>
+    );
+  };
+
+  const Section = ({ id, title, children }) => (
+    <View style={styles.section}>
+      <TouchableOpacity style={styles.sectionHeader} onPress={() => toggle(id)}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.chevron}>{open[id] ? "▾" : "▸"}</Text>
+      </TouchableOpacity>
+      {open[id] && <View style={styles.sectionBody}>{children}</View>}
+    </View>
   );
 
   return (
-    <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 12 }}>
+    <ScrollView style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Фільтри</Text>
-        <TouchableOpacity onPress={clearAll}>
-          <Text style={styles.reset}>Скинути</Text>
-        </TouchableOpacity>
+        <TouchableOpacity onPress={resetAll}><Text style={styles.reset}>Скинути</Text></TouchableOpacity>
       </View>
 
-      {/* Місто */}
-      <Section
-        title="Місто"
-        expanded={open.city}
-        onToggle={() => setOpen({ ...open, city: !open.city })}
-      >
-        <View style={styles.pillRow}>
-          {CITIES.map((c) => (
-            <Pill key={c} field="city" value={c} label={c} />
-          ))}
-        </View>
+      <Section id="city" title="Місто">
+        <View style={styles.pillRow}>{cities.map((c) => <Pill key={c} field="city" value={c} label={c} />)}</View>
       </Section>
 
-      {/* Тип нерухомості */}
-      <Section
-        title="Тип нерухомості"
-        expanded={open.type}
-        onToggle={() => setOpen({ ...open, type: !open.type })}
-      >
-        <View style={styles.pillRow}>
-          {TYPES.map((t) => (
-            <Pill key={t} field="type" value={t} label={t} />
-          ))}
-        </View>
+      <Section id="type" title="Тип нерухомості">
+        <View style={styles.pillRow}>{types.map((t) => <Pill key={t} field="type" value={t} label={t} />)}</View>
       </Section>
 
-      {/* Кількість кімнат */}
-      <Section
-        title="Кількість кімнат"
-        expanded={open.rooms}
-        onToggle={() => setOpen({ ...open, rooms: !open.rooms })}
-      >
-        <View style={styles.pillRow}>
-          {["1", "2", "3", "4+"].map((r) => (
-            <Pill key={r} field="rooms" value={r} label={r} />
-          ))}
-        </View>
+      <Section id="rooms" title="Кількість кімнат">
+        <View style={styles.pillRow}>{["1", "2", "3", "4+"].map((r) => <Pill key={r} field="rooms" value={r} label={r} />)}</View>
       </Section>
 
-      {/* Заплановане введення */}
-      <Section
-        title="Заплановане введення"
-        expanded={open.year}
-        onToggle={() => setOpen({ ...open, year: !open.year })}
-      >
-        <View style={styles.pillRow}>
-          {["2025", "2026", "2027", "2028+"].map((y) => (
-            <Pill key={y} field="yearPlanned" value={y} label={y} />
-          ))}
-        </View>
+      <Section id="year" title="Заплановане введення">
+        <View style={styles.pillRow}>{["2025", "2026", "2027", "2028+"].map((y) => <Pill key={y} field="yearPlanned" value={y} label={y} />)}</View>
       </Section>
 
-      {/* Ціна */}
-      <Section
-        title="Ціна"
-        expanded={open.price}
-        onToggle={() => setOpen({ ...open, price: !open.price })}
-      >
-        <View style={styles.pillRow}>
-          {priceOptions.map((o) => (
-            <Pill key={o.v} field="priceBand" value={o.v} label={o.label} />
-          ))}
-        </View>
+      <Section id="price" title="Ціна">
+        <Text style={styles.sliderLabel}>{formatPrice(minPrice)} — {formatPrice(maxPrice)}</Text>
+        <Slider
+          min={minPriceAll}
+          max={maxPriceAll}
+          valMin={minPrice}
+          valMax={maxPrice}
+          setValMin={setMinPrice}
+          setValMax={setMaxPrice}
+        />
       </Section>
 
-      {/* Площа */}
-      <Section
-        title="Площа"
-        expanded={open.area}
-        onToggle={() => setOpen({ ...open, area: !open.area })}
-      >
-        <View style={styles.pillRow}>
-          {areaOptions.map((o) => (
-            <Pill key={o.v} field="areaBand" value={o.v} label={o.label} />
-          ))}
-        </View>
+      <Section id="area" title="Площа">
+        <Text style={styles.sliderLabel}>{Math.round(minArea)} м² — {Math.round(maxArea)} м²</Text>
+        <Slider
+          min={minAreaAll}
+          max={maxAreaAll}
+          valMin={minArea}
+          valMax={maxArea}
+          setValMin={setMinArea}
+          setValMax={setMaxArea}
+        />
       </Section>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    elevation: 3,
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  title: { fontSize: 20, fontWeight: "700", color: "#111" },
+  container: { backgroundColor: "#fff", borderRadius: 12, padding: 14 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  title: { fontSize: 18, fontWeight: "700" },
   reset: { color: "#ff9900", fontWeight: "600" },
-
-  section: { marginTop: 12, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 12 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#000" },
-  chevron: { fontSize: 16, color: "#777" },
-  sectionBody: { marginTop: 8 },
-
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: {
-    borderWidth: 1,
-    borderColor: "#d8d8d8",
-    backgroundColor: "#fff",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
+  section: { marginTop: 10, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 10 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between" },
+  sectionTitle: { fontWeight: "600", color: "#222" },
+  chevron: { fontSize: 14, color: "#777" },
+  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  pill: { borderWidth: 1, borderColor: "#ccc", borderRadius: 16, paddingVertical: 4, paddingHorizontal: 10 },
   pillActive: { backgroundColor: "#ff9900", borderColor: "#ff9900" },
-  pillText: { color: "#333" },
+  pillText: { color: "#444" },
   pillTextActive: { color: "#fff", fontWeight: "700" },
+  sliderWrap: { width: 200, height: 30, justifyContent: "center" },
+  sliderTrack: { position: "absolute", height: 4, backgroundColor: "#ddd", width: "100%", borderRadius: 2 },
+  sliderRange: { position: "absolute", height: 4, backgroundColor: "#ff9900", borderRadius: 2 },
+  sliderThumb: { position: "absolute", width: 18, height: 18, borderRadius: 9, backgroundColor: "#ff9900", top: 6 },
+  sliderLabel: { fontWeight: "600", marginBottom: 8, textAlign: "center", color: "#333" },
 });
