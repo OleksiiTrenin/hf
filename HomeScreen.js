@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   SafeAreaView,
@@ -27,13 +27,19 @@ export default function HomeScreen() {
   const isWide = width > 900;
   const numColumns = isWide ? (showFilters ? 2 : 3) : 1;
 
+  // ✅ стабільна функція для уникнення зайвих ререндерів
+  const handleSetFilters = useCallback((newFilters) => {
+    setFilters(newFilters);
+  }, []);
+
+  // ✅ валюта — лише для відображення (усі фільтри працюють у гривнях)
   const formatPrice = (uah) => {
-    const val =
-      currency === "UAH" ? uah : Math.round((uah / RATES.USD) * 100) / 100;
+    const val = currency === "UAH" ? uah : Math.round(uah / RATES.USD);
     const label = currency === "UAH" ? "₴" : "$";
     return `${label} ${val.toLocaleString("uk-UA")}`;
   };
 
+  // ✅ фільтрація завжди працює у гривнях
   const filtered = useMemo(() => {
     return propertiesData.filter((item) => {
       const {
@@ -128,7 +134,7 @@ export default function HomeScreen() {
           <View style={[styles.sidebar, { flex: isWide ? 0.18 : 1 }]}>
             <FilterSidebar
               filters={filters}
-              setFilters={setFilters}
+              setFilters={handleSetFilters}
               currency={currency}
               formatPrice={formatPrice}
               data={propertiesData}
@@ -139,7 +145,7 @@ export default function HomeScreen() {
         <View
           style={[
             styles.list,
-            { flex: isWide ? (showFilters ? 0.82 : 1) : 1 },
+            { flex: isWide ? (showFilters ? 0.84 : 1) : 1 },
           ]}
         >
           <FlatList
