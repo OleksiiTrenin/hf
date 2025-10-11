@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   SafeAreaView,
@@ -10,6 +10,10 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  Animated,
+  Platform,
+  ScrollView,
+  KeyboardAvoidingView,
 } from "react-native";
 import FilterSidebar from "../components/FilterSidebar";
 import PropertyCard from "../components/PropertyCard";
@@ -17,42 +21,125 @@ import propertiesData from "../data/properties.json";
 
 const RATES = { UAH: 1, USD: 40 };
 
+// Окремий компонент MobileHeader
+const MobileHeader = ({ currency, setCurrency, search, setSearch, setShowFilters }) => (
+  <View style={styles.mHeader}>
+    <View style={styles.mTopRow}>
+      <View style={styles.mBrandWrap}>
+        <Image
+          source={{ uri: "https://prorappestate.com/assets/logo-black.svg" }}
+          style={styles.mLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.mBrand}>ProRapp Estate</Text>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <TouchableOpacity onPress={() => setCurrency("USD")}>
+          <Text style={[styles.curr, currency === "USD" && styles.currActive]}>
+            $ USD
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setCurrency("UAH")}>
+          <Text style={[styles.curr, currency === "UAH" && styles.currActive]}>
+            ₴ UAH
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+    <View style={styles.mBottomRow}>
+      <TouchableOpacity
+        onPress={() => setShowFilters(true)}
+        style={styles.mFilterBtn}
+      >
+        <Text style={styles.mFilterBtnText}>Фільтри</Text>
+      </TouchableOpacity>
+      <TextInput
+        placeholder="Пошук..."
+        placeholderTextColor="#777"
+        value={search}
+        onChangeText={setSearch}
+        style={styles.mSearch}
+        returnKeyType="search"
+      />
+    </View>
+  </View>
+);
+
+// Окремий компонент DesktopHeader
+const DesktopHeader = ({ currency, setCurrency, search, setSearch, setShowFilters, showFilters }) => (
+  <View style={styles.header}>
+    <View style={styles.headerLeft}>
+      <Image
+        source={{ uri: "https://prorappestate.com/assets/logo-black.svg" }}
+        style={styles.logo}
+        resizeMode="contain"
+      />
+      <Text style={styles.brand}>ProRapp Estate</Text>
+    </View>
+    <View style={styles.headerCenter}>
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => setShowFilters((v) => !v)}
+      >
+        <Text style={styles.filterButtonText}>
+          {showFilters ? "← Сховати фільтри" : "Показати фільтри →"}
+        </Text>
+      </TouchableOpacity>
+      <TextInput
+        placeholder="Пошук..."
+        placeholderTextColor="#777"
+        value={search}
+        onChangeText={setSearch}
+        style={styles.searchInput}
+      />
+    </View>
+    <View style={styles.headerRight}>
+      <TouchableOpacity onPress={() => setCurrency("USD")}>
+        <Text style={[styles.curr, currency === "USD" && styles.currActive]}>
+          $ USD
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => setCurrency("UAH")}>
+        <Text style={[styles.curr, currency === "UAH" && styles.currActive]}>
+          ₴ UAH
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
 export default function HomeScreen() {
   const [filters, setFilters] = useState({});
   const [currency, setCurrency] = useState("UAH");
   const [search, setSearch] = useState("");
-  const [showFilters, setShowFilters] = useState(true);
-
+  const [showFilters, setShowFilters] = useState(false);
   const width = Dimensions.get("window").width;
   const isWide = width > 900;
   const numColumns = isWide ? (showFilters ? 2 : 3) : 1;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  // ✅ стабільна функція для уникнення зайвих ререндерів
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: showFilters ? 1 : 0,
+      duration: 320,
+      useNativeDriver: true,
+    }).start();
+  }, [showFilters]);
+
   const handleSetFilters = useCallback((newFilters) => {
     setFilters(newFilters);
   }, []);
 
-  // ✅ валюта — лише для відображення (усі фільтри працюють у гривнях)
-  const formatPrice = (uah) => {
+  const formatPrice = useCallback((uah) => {
     const val = currency === "UAH" ? uah : Math.round(uah / RATES.USD);
     const label = currency === "UAH" ? "₴" : "$";
     return `${label} ${val.toLocaleString("uk-UA")}`;
-  };
+  }, [currency]);
 
-  // ✅ фільтрація завжди працює у гривнях
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return propertiesData.filter((item) => {
-      const {
-        city,
-        type,
-        rooms,
-        yearPlanned,
-        minPrice,
-        maxPrice,
-        minArea,
-        maxArea,
-      } = filters;
-
+      const { city, type, rooms, yearPlanned, minPrice, maxPrice, minArea, maxArea } = filters;
       const cityOk = !city || item.city === city;
       const typeOk = !type || item.type === type;
       const roomsOk =
@@ -69,13 +156,10 @@ export default function HomeScreen() {
       const areaOk =
         (!minArea && !maxArea) ||
         (item.area >= (minArea || 0) && item.area <= (maxArea || Infinity));
-
-      const q = search.trim().toLowerCase();
       const searchOk =
         !q ||
         item.title.toLowerCase().includes(q) ||
         item.city.toLowerCase().includes(q);
-
       return cityOk && typeOk && roomsOk && yearOk && priceOk && areaOk && searchOk;
     });
   }, [filters, search]);
@@ -83,97 +167,119 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <StatusBar barStyle="dark-content" />
-
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={{ uri: "https://prorappestate.com/assets/logo-black.svg" }}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.brand}>ProRapp Estate</Text>
-        </View>
-
-        <View style={styles.headerCenter}>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters((v) => !v)}
-          >
-            <Text style={styles.filterButtonText}>
-              {showFilters ? "← Сховати фільтри" : "Показати фільтри →"}
-            </Text>
-          </TouchableOpacity>
-
-          <TextInput
-            placeholder="Пошук..."
-            placeholderTextColor="#777"
-            value={search}
-            onChangeText={setSearch}
-            style={styles.searchInput}
-          />
-        </View>
-
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => setCurrency("USD")}>
-            <Text style={[styles.curr, currency === "USD" && styles.currActive]}>
-              $ USD
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setCurrency("UAH")}>
-            <Text style={[styles.curr, currency === "UAH" && styles.currActive]}>
-              ₴ UAH
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* BODY */}
-      <View style={[styles.page, { flexDirection: isWide ? "row" : "column" }]}>
-        {showFilters && (
-          <View style={[styles.sidebar, { flex: isWide ? 0.18 : 1 }]}>
-            <FilterSidebar
-              filters={filters}
-              setFilters={handleSetFilters}
-              currency={currency}
-              formatPrice={formatPrice}
-              data={propertiesData}
-            />
-          </View>
-        )}
-
+      {isWide ? (
+        <DesktopHeader
+          currency={currency}
+          setCurrency={setCurrency}
+          search={search}
+          setSearch={setSearch}
+          setShowFilters={setShowFilters}
+          showFilters={showFilters} // Додано showFilters
+        />
+      ) : (
+        <MobileHeader
+          currency={currency}
+          setCurrency={setCurrency}
+          search={search}
+          setSearch={setSearch}
+          setShowFilters={setShowFilters}
+        />
+      )}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
         <View
           style={[
-            styles.list,
-            { flex: isWide ? (showFilters ? 0.84 : 1) : 1 },
+            styles.page,
+            { flexDirection: isWide ? "row" : "column", paddingTop: isWide ? 16 : 10 },
           ]}
         >
-          <FlatList
-            data={filtered}
-            keyExtractor={(item) => String(item.id)}
-            numColumns={numColumns}
-            key={`cols-${numColumns}`}
-            renderItem={({ item }) => (
-              <View style={styles.cardCol}>
-                <PropertyCard
-                  property={item}
+          {isWide ? (
+            showFilters && (
+              <View style={[styles.sidebar, { flex: 0.18 }]}>
+                <FilterSidebar
+                  filters={filters}
+                  setFilters={handleSetFilters}
                   currency={currency}
                   formatPrice={formatPrice}
+                  data={propertiesData}
                 />
               </View>
-            )}
-            showsVerticalScrollIndicator
-            contentContainerStyle={{ paddingBottom: 24 }}
-            columnWrapperStyle={
-              numColumns > 1 ? { justifyContent: "space-between" } : undefined
-            }
-          />
+            )
+          ) : (
+            <Animated.View
+              style={[
+                styles.mobileFilterWrapper,
+                {
+                  transform: [
+                    {
+                      translateY: slideAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1000, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {showFilters && (
+                <View style={styles.mobileFilterBox}>
+                  <ScrollView
+                    contentContainerStyle={{
+                      paddingBottom: 80,
+                      paddingTop: 10,
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <FilterSidebar
+                      filters={filters}
+                      setFilters={handleSetFilters}
+                      currency={currency}
+                      formatPrice={formatPrice}
+                      data={propertiesData}
+                    />
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setShowFilters(false)}
+                    >
+                      <Text style={styles.closeText}>Закрити</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              )}
+            </Animated.View>
+          )}
+          <View style={[styles.list, { flex: isWide ? (showFilters ? 0.84 : 1) : 1 }]}>
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => String(item.id)}
+              numColumns={numColumns}
+              key={`cols-${numColumns}`}
+              renderItem={({ item }) => (
+                <View style={styles.cardCol}>
+                  <PropertyCard
+                    property={item}
+                    currency={currency}
+                    formatPrice={formatPrice}
+                  />
+                </View>
+              )}
+              showsVerticalScrollIndicator
+              contentContainerStyle={{ paddingBottom: 24 }}
+              columnWrapperStyle={
+                numColumns > 1 ? { justifyContent: "space-between" } : undefined
+              }
+            />
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+// Стили (без змін)
 const styles = StyleSheet.create({
   header: {
     height: 70,
@@ -216,8 +322,93 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
   curr: { fontSize: 14, fontWeight: "600", color: "#777" },
   currActive: { color: "#ff9900" },
-  page: { flex: 1, backgroundColor: "#f8f8f8", padding: 16, gap: 16 },
+  mHeader: {
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    paddingHorizontal: 10,
+    paddingTop: Platform.OS === "android" ? 10 : 14,
+    paddingBottom: 8,
+  },
+  mTopRow: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  mBrandWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginLeft: -4,
+  },
+  mLogo: { width: 26, height: 26 },
+  mBrand: { fontSize: 16, fontWeight: "700", color: "#111" },
+  mBottomRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  mFilterBtn: {
+    paddingHorizontal: 14,
+    height: 40,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: "#ff9900",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mFilterBtnText: { color: "#ff9900", fontWeight: "700", fontSize: 14 },
+  mSearch: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 22,
+    paddingHorizontal: 12,
+    backgroundColor: "#fafafa",
+  },
+  page: {
+    flex: 1,
+    backgroundColor: "#f8f8f8",
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 16,
+  },
   sidebar: { minWidth: 260, maxWidth: 320 },
   list: { flex: 1 },
   cardCol: { flex: 1, paddingHorizontal: 8, paddingVertical: 8 },
+  mobileFilterWrapper: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+  },
+  mobileFilterBox: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: -3 },
+    shadowRadius: 10,
+    elevation: 8,
+    maxHeight: "88%",
+  },
+  closeButton: {
+    backgroundColor: "#ff9900",
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginTop: 16,
+  },
+  closeText: {
+    textAlign: "center",
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });

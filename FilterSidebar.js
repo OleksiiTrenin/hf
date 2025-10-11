@@ -81,7 +81,7 @@ export default function FilterSidebar({
     }, 300);
   };
 
-  const areaOptions = [30, 40, 50, 60, 70, 90, 100, 120, 150, 200];
+  const areaOptions = [30, 40, 50, 60, 70, 90, 100, 120, 150, 200, 250 ];
 
   const handleAreaSelect = (val, type) => {
     if (type === "min") {

@@ -3,66 +3,66 @@
     "id": 1,
     "city": "Львів",
     "type": "Квартира",
-    "title": "Квартира в центрі Львова",
-    "price": 1200000,
-    "area": 60,
-    "rooms": 2,
+    "title": "ЖК вул. Трускавецька",
+    "price": 3360000,
+    "area": 41,
+    "rooms": 1,
     "year": 2024,
-    "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c"
+    "image": "image.jpg"
   },
   {
     "id": 2,
     "city": "Київ",
-    "type": "Будинок",
-    "title": "Просторий будинок у Києві",
-    "price": 2500000,
-    "area": 150,
-    "rooms": 5,
+    "type": "Квартира",
+    "title": "Простора квартира в Avalon Holiday",
+    "price": 4000000,
+    "area": 70,
+    "rooms": 2,
     "year": 2023,
-    "image": "https://images.unsplash.com/photo-1572120360610-d971b9b78825"
+    "image": "image_1.jpg"
   },
   {
     "id": 3,
     "city": "Варшава",
     "type": "Квартира",
     "title": "Сучасна квартира у Варшаві",
-    "price": 1900000,
-    "area": 80,
-    "rooms": 3,
-    "year": 2025,
-    "image": "https://images.unsplash.com/photo-1560185127-6ed189bf02f4"
+    "price": 3900000,
+    "area": 60,
+    "rooms": 2,
+    "year": 2026,
+    "image": "image_2.jpg"
   },
   {
     "id": 4,
     "city": "Львів",
     "type": "Квартира",
-    "title": "Новобудова біля парку",
-    "price": 1800000,
-    "area": 75,
-    "rooms": 3,
+    "title": "Затишний пентхаус у Avalon Up",
+    "price": 6500000,
+    "area": 125,
+    "rooms": 4,
     "year": 2026,
-    "image": "https://images.unsplash.com/photo-1600585154154-85b5a1c00eaa"
+    "image": "image_8.jpg"
   },
   {
     "id": 5,
     "city": "Одеса",
     "type": "Будинок",
-    "title": "Будинок біля моря",
-    "price": 3500000,
-    "area": 200,
+    "title": "Будинок біля моря в WOW House",
+    "price": 10000000,
+    "area": 250,
     "rooms": 6,
     "year": 2027,
-    "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994"
+    "image": "image_3.jpg"
   },
   {
     "id": 6,
     "city": "Краків",
     "type": "Квартира",
-    "title": "Квартира у центрі Кракова",
-    "price": 2200000,
+    "title": "Квартира у центрі Кракова в ЖК CONTINENT STYLE",
+    "price": 3500000,
     "area": 90,
-    "rooms": 3,
+    "rooms": 2,
     "year": 2028,
-    "image": "https://images.unsplash.com/photo-1600047509807-ba3f1c2a2d5d"
+    "image": "image_5.jpg"
   }
 ]
