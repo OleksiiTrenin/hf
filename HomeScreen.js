@@ -14,6 +14,7 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  Pressable,
 } from "react-native";
 import FilterSidebar from "../components/FilterSidebar";
 import PropertyCard from "../components/PropertyCard";
@@ -21,8 +22,7 @@ import propertiesData from "../data/properties.json";
 
 const RATES = { UAH: 1, USD: 40 };
 
-// Окремий компонент MobileHeader
-const MobileHeader = ({ currency, setCurrency, search, setSearch, setShowFilters }) => (
+const MobileHeader = ({ currency, setCurrency, search, setSearch, setShowFilters, showFilters }) => (
   <View style={styles.mHeader}>
     <View style={styles.mTopRow}>
       <View style={styles.mBrandWrap}>
@@ -48,10 +48,12 @@ const MobileHeader = ({ currency, setCurrency, search, setSearch, setShowFilters
     </View>
     <View style={styles.mBottomRow}>
       <TouchableOpacity
-        onPress={() => setShowFilters(true)}
+        onPress={() => setShowFilters(!showFilters)}
         style={styles.mFilterBtn}
       >
-        <Text style={styles.mFilterBtnText}>Фільтри</Text>
+        <Text style={styles.mFilterBtnText}>
+          {showFilters ? "Закрити фільтри" : "Фільтри"}
+        </Text>
       </TouchableOpacity>
       <TextInput
         placeholder="Пошук..."
@@ -65,7 +67,6 @@ const MobileHeader = ({ currency, setCurrency, search, setSearch, setShowFilters
   </View>
 );
 
-// Окремий компонент DesktopHeader
 const DesktopHeader = ({ currency, setCurrency, search, setSearch, setShowFilters, showFilters }) => (
   <View style={styles.header}>
     <View style={styles.headerLeft}>
@@ -130,11 +131,14 @@ export default function HomeScreen() {
     setFilters(newFilters);
   }, []);
 
-  const formatPrice = useCallback((uah) => {
-    const val = currency === "UAH" ? uah : Math.round(uah / RATES.USD);
-    const label = currency === "UAH" ? "₴" : "$";
-    return `${label} ${val.toLocaleString("uk-UA")}`;
-  }, [currency]);
+  const formatPrice = useCallback(
+    (uah) => {
+      const val = currency === "UAH" ? uah : Math.round(uah / RATES.USD);
+      const label = currency === "UAH" ? "₴" : "$";
+      return `${label} ${val.toLocaleString("uk-UA")}`;
+    },
+    [currency]
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -164,6 +168,10 @@ export default function HomeScreen() {
     });
   }, [filters, search]);
 
+  const resetAllFilters = () => {
+    setFilters({});
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <StatusBar barStyle="dark-content" />
@@ -174,7 +182,7 @@ export default function HomeScreen() {
           search={search}
           setSearch={setSearch}
           setShowFilters={setShowFilters}
-          showFilters={showFilters} // Додано showFilters
+          showFilters={showFilters}
         />
       ) : (
         <MobileHeader
@@ -183,8 +191,10 @@ export default function HomeScreen() {
           search={search}
           setSearch={setSearch}
           setShowFilters={setShowFilters}
+          showFilters={showFilters}
         />
       )}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -208,49 +218,68 @@ export default function HomeScreen() {
               </View>
             )
           ) : (
-            <Animated.View
-              style={[
-                styles.mobileFilterWrapper,
-                {
-                  transform: [
-                    {
-                      translateY: slideAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1000, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
+            <>
               {showFilters && (
-                <View style={styles.mobileFilterBox}>
-                  <ScrollView
-                    contentContainerStyle={{
-                      paddingBottom: 80,
-                      paddingTop: 10,
-                    }}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                  >
-                    <FilterSidebar
-                      filters={filters}
-                      setFilters={handleSetFilters}
-                      currency={currency}
-                      formatPrice={formatPrice}
-                      data={propertiesData}
-                    />
+                <View style={styles.overlay}>
+                  <Pressable style={{ flex: 1 }} onPress={() => setShowFilters(false)} />
+                </View>
+              )}
+
+              <Animated.View
+                style={[
+                  styles.mobileFilterWrapper,
+                  {
+                    transform: [
+                      {
+                        translateY: slideAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [Dimensions.get("window").height, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                {showFilters && (
+                  <View style={styles.mobileFilterBox}>
+                    <View style={styles.mobileFilterHeaderFixed}>
+                      <Text style={styles.filterTitle}>Фільтри</Text>
+                      <TouchableOpacity onPress={resetAllFilters}>
+                        <Text style={styles.resetText}>Скинути</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    <ScrollView
+                      contentContainerStyle={{
+                        paddingBottom: 120,
+                        paddingTop: 70,
+                      }}
+                      showsVerticalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      <FilterSidebar
+                        filters={filters}
+                        setFilters={handleSetFilters}
+                        currency={currency}
+                        formatPrice={formatPrice}
+                        data={propertiesData}
+                        hideTitle={true}
+                        isMobile={true}
+                      />
+                    </ScrollView>
+
                     <TouchableOpacity
                       style={styles.closeButton}
                       onPress={() => setShowFilters(false)}
                     >
                       <Text style={styles.closeText}>Закрити</Text>
                     </TouchableOpacity>
-                  </ScrollView>
-                </View>
-              )}
-            </Animated.View>
+                  </View>
+                )}
+              </Animated.View>
+            </>
           )}
+
           <View style={[styles.list, { flex: isWide ? (showFilters ? 0.84 : 1) : 1 }]}>
             <FlatList
               data={filtered}
@@ -279,7 +308,6 @@ export default function HomeScreen() {
   );
 }
 
-// Стили (без змін)
 const styles = StyleSheet.create({
   header: {
     height: 70,
@@ -290,7 +318,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   logo: { width: 36, height: 36 },
@@ -322,12 +349,13 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: "row", alignItems: "center", gap: 10 },
   curr: { fontSize: 14, fontWeight: "600", color: "#777" },
   currActive: { color: "#ff9900" },
+
   mHeader: {
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
     paddingHorizontal: 10,
-    paddingTop: Platform.OS === "android" ? 10 : 14,
+    paddingTop: Platform.OS === "android" ? 12 : 14,
     paddingBottom: 8,
   },
   mTopRow: {
@@ -336,20 +364,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  mBrandWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginLeft: -4,
-  },
+  mBrandWrap: { flexDirection: "row", alignItems: "center", gap: 6, marginLeft: -4 },
   mLogo: { width: 26, height: 26 },
   mBrand: { fontSize: 16, fontWeight: "700", color: "#111" },
-  mBottomRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
+  mBottomRow: { marginTop: 8, flexDirection: "row", alignItems: "center", gap: 8 },
   mFilterBtn: {
     paddingHorizontal: 14,
     height: 40,
@@ -379,31 +397,50 @@ const styles = StyleSheet.create({
   sidebar: { minWidth: 260, maxWidth: 320 },
   list: { flex: 1 },
   cardCol: { flex: 1, paddingHorizontal: 8, paddingVertical: 8 },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    zIndex: 40,
+  },
   mobileFilterWrapper: {
     position: "absolute",
     left: 0,
     right: 0,
+    top: 0,
     bottom: 0,
-    zIndex: 20,
+    zIndex: 50,
   },
   mobileFilterBox: {
+    flex: 1,
     backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
     paddingHorizontal: 16,
-    paddingBottom: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: -3 },
-    shadowRadius: 10,
-    elevation: 8,
-    maxHeight: "88%",
+    height: "100%",
   },
+  mobileFilterHeaderFixed: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 60,
+    height: 60,
+  },
+  filterTitle: { fontSize: 18, fontWeight: "700", color: "#111" },
+  resetText: { color: "#ff9900", fontWeight: "600", fontSize: 15 },
   closeButton: {
     backgroundColor: "#ff9900",
-    borderRadius: 14,
+    borderRadius: 22,
     paddingVertical: 14,
-    marginTop: 16,
+    marginTop: 10,
+    marginBottom: 20,
   },
   closeText: {
     textAlign: "center",

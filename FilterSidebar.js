@@ -8,6 +8,7 @@ import {
   TextInput,
   Animated,
   Dimensions,
+  Platform,
 } from "react-native";
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -18,6 +19,8 @@ export default function FilterSidebar({
   currency,
   formatPrice,
   data,
+  hideTitle = false,
+  isMobile = false
 }) {
   const cities = useMemo(
     () => [...new Set(data.map((p) => p.city))].sort(),
@@ -32,13 +35,21 @@ export default function FilterSidebar({
   const [priceTo, setPriceTo] = useState("");
   const [showDropdown, setShowDropdown] = useState(null);
   const [selectedPrice, setSelectedPrice] = useState(null);
+  
+  const [open, setOpen] = useState({
+    city: isMobile ? true : true,
+    type: isMobile ? true : true,
+    rooms: isMobile ? true : true,
+    year: isMobile ? true : true,
+    price: isMobile ? true : true,
+    area: isMobile ? true : true,
+  });
 
   const priceSuggestions = [
     1300000, 2000000, 2700000, 3500000, 4200000,
     5200000, 6300000, 7400000, 8400000, 10500000,
   ];
 
-  // Анімації для кожного елементу списку
   const animValues = useRef(priceSuggestions.map(() => new Animated.Value(0))).current;
 
   useEffect(() => {
@@ -51,9 +62,7 @@ export default function FilterSidebar({
     }));
   }, [priceFrom, priceTo]);
 
-  // Функція для анімації при виборі ціни
   const handlePriceSelect = (price, index) => {
-    // Анімація для обраного елементу
     Animated.sequence([
       Animated.timing(animValues[index], {
         toValue: 1,
@@ -81,7 +90,7 @@ export default function FilterSidebar({
     }, 300);
   };
 
-  const areaOptions = [30, 40, 50, 60, 70, 90, 100, 120, 150, 200, 250 ];
+  const areaOptions = [30, 40, 50, 60, 70, 90, 100, 120, 150, 200, 250];
 
   const handleAreaSelect = (val, type) => {
     if (type === "min") {
@@ -114,32 +123,44 @@ export default function FilterSidebar({
 
   const Section = ({ id, title, children }) => (
     <View style={styles.section}>
-      <TouchableOpacity
-        style={styles.sectionHeader}
-        onPress={() => setOpen((p) => ({ ...p, [id]: !p[id] }))}
-      >
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </TouchableOpacity>
-      <View style={styles.sectionBody}>{children}</View>
+      {!isMobile && (
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => setOpen((p) => ({ ...p, [id]: !p[id] }))}
+        >
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={styles.chevron}>{open[id] ? "▾" : "▸"}</Text>
+        </TouchableOpacity>
+      )}
+      {isMobile ? (
+        <View style={styles.sectionBody}>{children}</View>
+      ) : (
+        open[id] && <View style={styles.sectionBody}>{children}</View>
+      )}
     </View>
   );
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 16 }}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Фільтри</Text>
-        <TouchableOpacity
-          onPress={() => {
-            setFilters({});
-            setPriceFrom("");
-            setPriceTo("");
-          }}
-        >
-          <Text style={styles.reset}>Скинути</Text>
-        </TouchableOpacity>
-      </View>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={{ paddingBottom: 16 }}
+      showsVerticalScrollIndicator={true}
+    >
+      {!hideTitle && (
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>Фільтри</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setFilters({});
+              setPriceFrom("");
+              setPriceTo("");
+            }}
+          >
+            <Text style={styles.reset}>Скинути</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* ---- Місто ---- */}
       <Section id="city" title="Місто">
         <View style={styles.pillRow}>
           {cities.map((c) => (
@@ -148,7 +169,6 @@ export default function FilterSidebar({
         </View>
       </Section>
 
-      {/* ---- Тип ---- */}
       <Section id="type" title="Тип нерухомості">
         <View style={styles.pillRow}>
           {types.map((t) => (
@@ -157,7 +177,6 @@ export default function FilterSidebar({
         </View>
       </Section>
 
-      {/* ---- Кімнати ---- */}
       <Section id="rooms" title="Кількість кімнат">
         <View style={styles.pillRow}>
           {["1", "2", "3", "4+"].map((r) => (
@@ -166,7 +185,6 @@ export default function FilterSidebar({
         </View>
       </Section>
 
-      {/* ---- Рік ---- */}
       <Section id="year" title="Заплановане введення">
         <View style={styles.pillRow}>
           {["2025", "2026", "2027", "2028+"].map((y) => (
@@ -175,7 +193,6 @@ export default function FilterSidebar({
         </View>
       </Section>
 
-      {/* ---- ЦІНА ---- */}
       <Section id="price" title="Ціна">
         <View style={styles.priceContainer}>
           <View style={styles.priceRow}>
@@ -215,7 +232,10 @@ export default function FilterSidebar({
           </View>
 
           {showDropdown && (
-            <View style={styles.dropdownBox}>
+            <View style={[
+              styles.dropdownBox,
+              isMobile && styles.dropdownBoxMobile
+            ]}>
               <ScrollView 
                 style={styles.dropdownScroll}
                 showsVerticalScrollIndicator={true}
@@ -270,7 +290,6 @@ export default function FilterSidebar({
         </Text>
       </Section>
 
-      {/* ---- Площа ---- */}
       <Section id="area" title="Площа (м²)">
         <Text style={styles.subTitle}>Від:</Text>
         <View style={styles.pillRow}>
@@ -335,6 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 10,
   },
   title: { fontSize: 18, fontWeight: "700", color: "#111" },
   reset: { color: "#ff9900", fontWeight: "600" },
@@ -350,6 +370,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sectionTitle: { fontSize: 15, fontWeight: "600" },
+  chevron: { fontSize: 16, color: "#888" },
   sectionBody: { marginTop: 8 },
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   pill: {
@@ -363,7 +384,7 @@ const styles = StyleSheet.create({
   pillText: { color: "#444" },
   pillTextActive: { color: "#fff", fontWeight: "700" },
   priceContainer: {
-    minHeight: 50, // Мінімальна висота для секції ціни
+    minHeight: 50,
   },
   priceRow: {
     flexDirection: "row",
@@ -403,10 +424,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 5,
-    maxHeight: 250, // Збільшена максимальна висота
-    minHeight: 200, // Мінімальна висота для кращого відображення
+    maxHeight: 250,
+    minHeight: 200,
     width: '100%',
     zIndex: 100,
+  },
+  dropdownBoxMobile: {
+    maxHeight: 300,
+    minHeight: 250,
   },
   dropdownScroll: {
     flex: 1,

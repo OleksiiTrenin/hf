@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 290,
+    height: 320,
   },
   info: {
     padding: 14,

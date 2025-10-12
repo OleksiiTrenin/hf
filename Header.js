@@ -11,7 +11,7 @@ export default function Header({ onToggleFilters }) {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.brand}>ProRapp Estate</Text>
+        <Text style={styles.brand}>Pro8Rapp Estate</Text>
       </View>
 
       {/* Центр: кнопка і пошук */}
